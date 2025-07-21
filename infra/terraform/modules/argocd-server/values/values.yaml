@@ -1,0 +1,46 @@
+controller:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+configs:
+  cm:
+    accounts.admin: "apiKey, login"
+#  secret:
+#    initialAdminPassword: "AvZzzgHbbOqgg-iW"
+server:
+  image:
+    repository: quay.io/argoproj/argocd
+    tag: v2.11.8
+  extraArgs:
+    - --insecure
+  readinessProbe:
+    tcpSocket:
+      port: 8080
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+  service:
+    type: NodePort
+    nodePortHttp: 30080
+    nodePortHttps: 30443
+  ingress:
+    enabled: false
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  dex:
+    enabled: false
+  redis-ha:
+    enabled: false
+repoServer:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+applicationSet:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
