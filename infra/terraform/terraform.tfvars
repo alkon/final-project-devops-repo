@@ -10,11 +10,11 @@ git_repo_name = "terraform-flask-otel-repo"
 # Helm chart details
 helm_chart_repo     = "oci://ghcr.io"
 helm_chart_name     = "flask-app"
-helm_chart_version  = "0.15.0"
+helm_chart_version  = "1.0.9"
 
 # Docker image details
 docker_image_repo   = "ghcr.io"
-docker_image_tag    = "1.5.0" # Corrected: using docker_image_tag
+docker_image_tag    = "1.8.3" # Corrected: using docker_image_tag
 
 # OpenTelemetry service name
 flask_app_service_name = "flask-app-srv"
@@ -23,5 +23,5 @@ flask_app_service_name = "flask-app-srv"
 
 # argocd_auth_token = ""
 argocd_server = "localhost:30080" # HTTP
-argocd_password = "a6d2laMDkI7OvmxR"
+argocd_password = "HstvJ2Y6Wf02eCmM"
 argocd_insecure = true

@@ -1,0 +1,73 @@
+## Project Purpose
+This Terraform repo bootstraps Argo CD and defines Argo CD Applications to manage all platform components in a GitOps style.
+
+## Structure
+- modules/argocd-server: Helm-based Argo CD installation
+- modules/argocd-app: Git-based chart management
+- modules/argocd-app-oci: OCI registry-based chart management
+
+## Key Variables
+- use_oci_chart (bool): Toggle to use OCI registry for flask-app
+- argocd_password: Sets Argo CD admin password
+
+## Behavior
+Only Argo CD and its applications are managed by Terraform.
+All other infrastructure (OpenTelemetry, Thanos, Grafana, etc.) is handled via Argo CD apps, sourced from `app-gitops-manifests-repo`.
+
+## External Repos
+- flask-app chart: terraform-flask-otel-repo
+- other charts: app-gitops-manifests-repo
+
+## Notes
+The project supports both Git-based and OCI-based Helm charts.
+Only one `argocd_app_flask_app_*` is enabled at a time.
+
+## Observability Design
+This system uses OpenTelemetry to emit:
+- **Metrics** for RED dashboarding (Rate, Error, Duration)
+- **Traces** for distributed span tracking (via Tempo)
+
+Metrics go through the OTel Collector → Thanos
+Traces go through the OTel Collector → Tempo
+
+Grafana displays both dashboards.
+
+## Exemplars (Not Yet Enabled)
+
+The goal is to support **Exemplars**, which link metrics to traces:
+- Grafana can display trace IDs directly in RED metric graphs.
+- Clicking an exemplar navigates to the related Tempo trace.
+
+This allows intuitive drill-down from metric anomalies to traces.
+
+Currently disabled due to:
+- Incomplete Thanos support for exemplars in the deployed chart version.
+
+## Simulation
+
+The Flask app exposes a single `/checkout` route that simulates:
+
+- Latency spikes
+- Randomized failures
+
+It operates in two modes:
+
+- **Normal Mode**: 50–150ms latency, ~5% simulated error rate
+- **Peak Mode**: 1800–2500ms latency, ~70% simulated error rate
+
+Peak periods last for **30 seconds** and occur **randomly every 1–3 minutes**.
+
+The app logs each request’s mode, latency, and result (success or error), for example:
+
+These behaviors are intended to:
+- Trigger **RED metrics spikes** (Rate, Errors, Duration) in Grafana dashboards via Thanos
+- Generate **long-duration spans** in Tempo traces
+
+> This simulation is stable, repeatable, and safe for automated environments such as CI/CD pipelines or sandbox testing.
+
+It is also designed for future support of **Grafana exemplars**, allowing one-click trace lookup from metric anomalies.
+
+## Future Work
+Upgrade Thanos Helm chart and enable exemplar ingestion from OTel Collector.
+
+
