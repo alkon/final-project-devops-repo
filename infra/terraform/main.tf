@@ -33,9 +33,9 @@ module "argocd_app_flask_app_oci" {
   app_namespace = local.flask_app_namespace_name
 
   repo_url = "ghcr.io/alkon" # without 'oci://' prefix
-  repo_revision = "1.0.2"
+  repo_revision = "1.0.9"
   chart_name = "flask-app"
-  image_tag = "1.6.1"
+  image_tag = "1.8.3"
 
   argocd_project = "flask-app-project"
 }
