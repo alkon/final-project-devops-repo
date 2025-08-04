@@ -5,4 +5,5 @@ locals {
   cert_namespace_name = kubernetes_namespace.cert_ns.metadata[0].name
   flask_app_namespace_name = kubernetes_namespace.flask_app_ns.metadata[0].name
   secrets_namespace_name = kubernetes_namespace.secrets_ns.metadata[0].name
+  kargo_namespace_name = var.enable_kargo ? kubernetes_namespace.kargo_ns[0].metadata[0].name : null
 }

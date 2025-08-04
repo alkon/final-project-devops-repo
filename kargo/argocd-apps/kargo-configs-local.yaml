@@ -1,0 +1,18 @@
+# Temporary ArgoCD app for local testing (remove after Git push)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-configs-local
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alkon/final-project-devops-repo.git
+    targetRevision: features/k8s
+    path: kargo
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

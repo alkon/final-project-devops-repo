@@ -1,0 +1,11 @@
+# Kargo Project Definition - Defines the overall project scope
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Project
+metadata:
+  name: flask-app
+  namespace: kargo-ns
+spec:
+  # Optional: Define promotion policies at the project level
+  promotionPolicies:
+    - stage: prod
+      autoPromotionEnabled: false  # Require manual approval for production

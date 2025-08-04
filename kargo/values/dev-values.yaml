@@ -1,0 +1,39 @@
+# Development Environment Values - Managed by Kargo
+# This file is automatically updated by Kargo when promoting new versions
+
+# Image configuration
+image:
+  # Tag is automatically updated by Kargo
+  tag: "1.8.3"
+
+# Dev-specific configurations
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+# Dev uses ClusterIP (internal access only)
+service:
+  type: ClusterIP
+  port: 5000
+
+# Enable debug logging in dev
+env:
+  - name: FLASK_ENV
+    value: "development"
+  - name: LOG_LEVEL
+    value: "DEBUG"
+
+# Disable autoscaling in dev
+autoscaling:
+  enabled: false
+
+# Dev-specific annotations
+podAnnotations:
+  environment: "development"
+  managed-by: "kargo"

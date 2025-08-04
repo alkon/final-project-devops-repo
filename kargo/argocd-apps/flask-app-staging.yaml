@@ -1,0 +1,48 @@
+# ArgoCD Application for Staging Environment - Kargo Managed
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flask-app-staging-kargo
+  namespace: argocd
+  labels:
+    environment: staging
+    managed-by: kargo
+  annotations:
+    kargo.akuity.io/color: green
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/alkon/final-gitops-proj.git
+    targetRevision: main
+    path: k8s/helm-charts/flask-app
+    helm:
+      valueFiles:
+        - values.yaml                               # Original base values
+        - ../../../kargo/values/staging-values.yaml # Kargo-managed staging values
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: flask-app-staging
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Add health checks for staging
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

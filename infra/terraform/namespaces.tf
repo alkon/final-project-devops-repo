@@ -33,3 +33,15 @@ resource "kubernetes_namespace" "monitoring" {
     name = "monitoring"
   }
 }
+
+resource "kubernetes_namespace" "kargo_ns" {
+  count = var.enable_kargo ? 1 : 0
+  metadata {
+    name = var.kargo_namespace
+    labels = {
+      "app.kubernetes.io/name"       = "kargo"
+      "app.kubernetes.io/version"    = "1.6.0"
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+}

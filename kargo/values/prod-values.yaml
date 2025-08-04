@@ -1,0 +1,73 @@
+# Production Environment Values - Managed by Kargo
+# This file is automatically updated by Kargo when promoting from staging
+# REQUIRES MANUAL APPROVAL
+
+# Image configuration
+image:
+  # Tag is automatically updated by Kargo from staging stage
+  tag: "1.8.3"
+
+# Production-specific configurations
+replicaCount: 3
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Production uses LoadBalancer
+service:
+  type: LoadBalancer
+  port: 5000
+  # Production-specific annotations
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+
+# Production environment variables
+env:
+  - name: FLASK_ENV
+    value: "production"
+  - name: LOG_LEVEL
+    value: "WARNING"
+  - name: ENABLE_METRICS
+    value: "true"
+  - name: ENABLE_TRACING
+    value: "true"
+
+# Production autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+
+# Production-specific annotations
+podAnnotations:
+  environment: "production"
+  managed-by: "kargo"
+  monitoring: "enabled"
+  alerting: "enabled"
+
+# Production pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Production affinity rules
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - flask-app
+          topologyKey: kubernetes.io/hostname

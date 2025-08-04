@@ -1,0 +1,61 @@
+# ArgoCD Application to manage Kargo configurations
+# This follows the hybrid approach: Terraform installs Kargo, ArgoCD manages configs
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-configs
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: kargo-configs
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # Link to Kargo UI for easy access
+    kargo.akuity.io/dashboard: "http://localhost:8080"
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/alkon/final-gitops-proj.git
+    targetRevision: main
+    path: kargo
+    # Include all Kargo YAML files except ArgoCD apps (to avoid recursion)
+    directory:
+      include: |
+        project.yaml
+        warehouse.yaml
+        stages/*.yaml
+      exclude: |
+        argocd-apps/**
+        KARGO_CONFIG.md
+  
+  destination:
+    server: https://kubernetes.default.svc
+    # Kargo configurations can be in different namespaces
+    # Projects and stages will be created in their specified namespaces
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Health checks for Kargo resources
+  ignoreDifferences:
+    - group: kargo.akuity.io
+      kind: Stage
+      jsonPointers:
+        - /status
+    - group: kargo.akuity.io
+      kind: Warehouse  
+      jsonPointers:
+        - /status
+        - /spec/subscriptions/*/discoveredArtifacts

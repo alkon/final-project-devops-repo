@@ -1,0 +1,53 @@
+# ArgoCD Application for Production Environment - Kargo Managed
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flask-app-prod-kargo
+  namespace: argocd
+  labels:
+    environment: production
+    managed-by: kargo
+    critical: "true"
+  annotations:
+    kargo.akuity.io/color: red
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: "deployments"
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/alkon/final-gitops-proj.git
+    targetRevision: main
+    path: k8s/helm-charts/flask-app
+    helm:
+      valueFiles:
+        - values.yaml                            # Original base values
+        - ../../../kargo/values/prod-values.yaml # Kargo-managed production values
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: flask-app-prod
+  
+  # Production uses manual sync for safety
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true  # Delete resources after sync to prevent outages
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+  
+  # Production-specific ignore differences
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # HPA manages replicas
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      jsonPointers:
+        - /spec/minReplicas
+        - /spec/maxReplicas
