@@ -10,6 +10,12 @@ resource "kubernetes_namespace" "cert_ns" {
   }
 }
 
+resource "kubernetes_namespace" "secrets_ns" {
+  metadata {
+    name = "secrets-ns"
+  }
+}
+
 resource "kubernetes_namespace" "otel_ns" {
   metadata {
     name = "otel-ns"
@@ -27,4 +33,3 @@ resource "kubernetes_namespace" "monitoring" {
     name = "monitoring"
   }
 }
-

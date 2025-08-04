@@ -118,6 +118,60 @@ module "argocd_app_cert_manager" {
 
 ######################################################################
 
+module "argocd_app_sealed_secrets_controller" {
+  source = "./modules/argocd-app-oci" # Changed to use the OCI application module
+
+  providers = {
+    argocd = argocd.main
+  }
+
+  depends_on = [
+    module.argocd_server,
+    null_resource.wait_for_argocd_api, # Ensure ArgoCD API is ready
+  ]
+
+  app_name      = "sealed-secrets-controller"
+  app_namespace = "secrets-ns" # Your chosen namespace for secrets
+
+  # OCI Chart specific parameters
+  repo_url      = "registry-1.docker.io/bitnamicharts" # OCI registry URL without 'oci://' prefix
+  repo_revision = "2.5.16" # The specific chart version for Sealed Secrets from OCI
+  chart_name    = "sealed-secrets" # The name of the chart within the OCI repository
+  image_tag     = "0.30.0" # <-- UPDATED THIS LINE: Explicitly set image_tag to appVersion
+
+  argocd_project = "flask-app-project" # Or your dedicated platform project
+}
+
+/*
+module "argocd_app_sealed_secrets_controller" {
+  source = "./modules/argocd-app" # Using the traditional Helm application module
+
+  providers = {
+    argocd = argocd.main
+  }
+
+  depends_on = [
+    module.argocd_server,
+    null_resource.wait_for_argocd_api, # Ensure ArgoCD API is ready
+    kubernetes_namespace.secrets_ns,
+  ]
+
+  app_name        = "sealed-secrets-controller"
+  app_namespace   = local.secrets_namespace_name # Your chosen namespace for secrets
+
+  # Parameters pointing to your GitOps repository
+  repo_url        = "https://github.com/alkon/app-gitops-manifests-repo.git" # Your GitOps repository
+  repo_revision   = "HEAD" # Or a specific branch/tag like 'main'
+  chart_path      = "platform-apps/sealed-secrets" # Path to the chart within your GitOps repository
+  # Note: The 'image_tag' parameter is not needed here as the 'argocd-app' module
+  #       does not have a hardcoded 'image.tag' parameter in its helm block.
+
+  argocd_project = "flask-app-project" # Or your dedicated platform project
+}
+*/
+
+######################################################################
+
 module "argocd_app_otel_instrumentation" {
   source = "./modules/argocd-app"
 
@@ -134,7 +188,7 @@ module "argocd_app_otel_instrumentation" {
 
   app_name      = "otel-instrumentation"
   # Target namespace is the 'flask-app-ns'
-  app_namespace = "flask-app-ns"
+  app_namespace = local.flask_app_namespace_name
 
   repo_url      = "https://github.com/alkon/app-gitops-manifests-repo.git"
   repo_revision = "HEAD"

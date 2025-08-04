@@ -4,4 +4,5 @@ locals {
   monitoring_namespace_name = kubernetes_namespace.monitoring.metadata[0].name
   cert_namespace_name = kubernetes_namespace.cert_ns.metadata[0].name
   flask_app_namespace_name = kubernetes_namespace.flask_app_ns.metadata[0].name
+  secrets_namespace_name = kubernetes_namespace.secrets_ns.metadata[0].name
 }
