@@ -1,0 +1,159 @@
+# Kargo Stage v1.6 - Production Environment with advanced security & approval workflows
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod
+  namespace: kargo-ns
+  labels:
+    environment: production
+    criticality: high
+    kargo.akuity.io/project: flask-app
+  annotations:
+    # v1.6: Enhanced UI with custom colors and descriptions
+    kargo.akuity.io/color: "#F44336"  # Red for production
+    kargo.akuity.io/description: "Production environment - requires manual approval"
+    kargo.akuity.io/approval-required: "true"
+spec:
+  # Promote only from staging (enforces progression)
+  subscriptions:
+    upstreamStages:
+      - name: staging
+  
+  # Enhanced production promotion mechanisms
+  promotionMechanisms:
+    gitRepoUpdates:
+      - repoURL: https://github.com/alkon/final-gitops-proj.git
+        writeBranch: main
+        # v1.6: Enhanced commit message with approval tracking
+        commitMessageTemplate: |
+          🚀 Kargo: PRODUCTION deployment {{.ArtifactVersion}}
+          
+          Environment: Production
+          Image: {{.Image}}
+          Chart: {{.Chart}}
+          Approved by: {{.ApprovedBy}}
+          Approval time: {{.ApprovalTime}}
+          
+          Previous version: {{.PreviousVersion}}
+          Rollback command: kubectl rollout undo deployment/flask-app -n flask-app-prod
+        helm:
+          images:
+            - image: ghcr.io/alkon/flask-app
+              key: image.tag
+              value: IMAGE_TAG
+              valuesFilePath: kargo/values/prod-values.yaml
+        # v1.6: Create PR for production changes (safety measure)
+        pullRequest:
+          enabled: true
+          targetBranch: main
+          title: "🚀 Kargo: Promote {{.ArtifactVersion}} to PRODUCTION"
+          body: |
+            ## Production Deployment Request
+            
+            **Artifact**: {{.ArtifactVersion}}  
+            **Environment**: Production  
+            **Promoted from**: Staging  
+            
+            ### Verification Results
+            - ✅ Staging tests passed
+            - ✅ Security scan completed
+            - ✅ Performance benchmarks met
+            
+            **Review required**: @devops-team
+        # No Git credentials needed - Kargo watches registry only
+          
+  # v1.6: Enhanced multi-stage verification for production
+  verification:
+    # Production verification must be sequential for safety
+    parallel: false
+    timeout: "30m"  # Extended timeout for production
+    steps:
+      - name: pre-deployment-security-scan
+        analysisTemplate:
+          name: security-scan-prod
+        args:
+          - name: severity-threshold
+            value: "high"
+          - name: fail-on-critical
+            value: "true"
+      
+      - name: smoke-tests-prod
+        analysisTemplate:
+          name: smoke-tests-prod
+        args:
+          - name: environment
+            value: production
+          - name: timeout
+            value: "600s"
+      
+      - name: performance-baseline
+        analysisTemplate:
+          name: performance-tests
+        args:
+          - name: baseline-threshold
+            value: "95"  # 95th percentile
+          - name: duration
+            value: "10m"
+      
+      # v1.6: Rollback readiness verification
+      - name: rollback-readiness
+        analysisTemplate:
+          name: rollback-readiness-check
+        args:
+          - name: backup-verified
+            value: "true"
+      
+      # v1.6: Multi-channel notifications
+      - name: production-notifications
+        webhook:
+          url: "https://hooks.slack.com/your-prod-webhook"
+          method: POST
+          headers:
+            Content-Type: "application/json"
+          body: |
+            {
+              "text": "🚨 PRODUCTION DEPLOYMENT: Flask-app {{.ArtifactVersion}} is now live",
+              "channel": "#production-alerts",
+              "attachments": [
+                {
+                  "color": "good",
+                  "fields": [
+                    {
+                      "title": "Version",
+                      "value": "{{.ArtifactVersion}}",
+                      "short": true
+                    },
+                    {
+                      "title": "Environment", 
+                      "value": "Production",
+                      "short": true
+                    }
+                  ]
+                }
+              ]
+            }
+  
+  # v1.6: Advanced approval workflow
+  promotionPolicy:
+    autoPromotionEnabled: false
+    # New v1.6: Multi-step approval process
+    approvals:
+      required: true
+      approvers:
+        - type: "team"
+          name: "devops-team"
+        - type: "user"
+          name: "tech-lead"
+      # Require minimum approval count
+      minimumApprovals: 2
+      # Approval timeout
+      timeout: "24h"
+    
+    # v1.6: Production-specific conditions
+    conditions:
+      - type: "StagingHealthy"
+        duration: "2h"  # Staging must be healthy for 2 hours
+      - type: "SecurityScanPassed"
+        status: "True"
+      - type: "BusinessHoursOnly"  # Only allow prod deployments during business hours
+        schedule: "0 9-17 * * MON-FRI"  # 9 AM to 5 PM, Monday to Friday

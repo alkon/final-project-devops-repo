@@ -1,0 +1,45 @@
+# Kargo Warehouse v1.6 - Enhanced with webhook support and smart filtering
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: flask-app
+  namespace: kargo-ns
+  labels:
+    app.kubernetes.io/name: flask-app
+    kargo.akuity.io/project: flask-app
+spec:
+  # Enhanced subscriptions with v1.6 features
+  subscriptions:
+    # Container image subscription with improved filtering
+    - image:
+        repoURL: ghcr.io/alkon/flask-app
+        # Enhanced semantic versioning with smart filtering (v1.6)
+        semverConstraint: ">=1.8.0"
+        tagSelectionStrategy: SemVer
+        # New v1.6 feature: Webhook integration for real-time updates
+        webhook:
+          enabled: true
+          # GitHub webhook configuration  
+          github:
+            repository: "alkon/final-gitops-proj"
+            events: ["push", "release"]
+        # Performance optimization (v1.6)
+        discoveryLimit: 10  # Limit artifacts to reduce memory usage
+    
+    # Enhanced Helm chart subscription
+    - chart:
+        repoURL: oci://ghcr.io/alkon/charts
+        name: flask-app
+        semverConstraint: ">=1.0.0"
+        # New v1.6: Chart webhook support
+        webhook:
+          enabled: true
+        # Smart caching (v1.6 feature)
+        cacheTTL: "1h"
+  
+  # v1.6 Feature: Advanced artifact retention
+  retention:
+    # Keep only the last 5 artifacts per subscription
+    maxArtifacts: 5
+    # Automatically clean up artifacts older than 30 days
+    maxAge: "720h" # 30 days

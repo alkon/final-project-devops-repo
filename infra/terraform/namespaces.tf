@@ -10,6 +10,12 @@ resource "kubernetes_namespace" "cert_ns" {
   }
 }
 
+resource "kubernetes_namespace" "secrets_ns" {
+  metadata {
+    name = "secrets-ns"
+  }
+}
+
 resource "kubernetes_namespace" "otel_ns" {
   metadata {
     name = "otel-ns"
@@ -28,3 +34,14 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
+resource "kubernetes_namespace" "kargo_ns" {
+  count = var.enable_kargo ? 1 : 0
+  metadata {
+    name = var.kargo_namespace
+    labels = {
+      "app.kubernetes.io/name"       = "kargo"
+      "app.kubernetes.io/version"    = "1.6.0"
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+}

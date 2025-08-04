@@ -1,0 +1,44 @@
+# ArgoCD Application for Development Environment - Kargo Managed
+# This is a NEW ArgoCD app that works alongside your existing setup
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flask-app-dev-kargo
+  namespace: argocd
+  labels:
+    environment: dev
+    managed-by: kargo
+  # Annotations for Kargo integration
+  annotations:
+    kargo.akuity.io/color: blue
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/alkon/final-gitops-proj.git
+    targetRevision: main
+    path: k8s/helm-charts/flask-app
+    helm:
+      # Use multiple values files - base + environment specific
+      valueFiles:
+        - values.yaml                           # Original base values (unchanged)
+        - ../../../kargo/values/dev-values.yaml # Kargo-managed environment values
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: flask-app-dev
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

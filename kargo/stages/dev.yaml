@@ -1,0 +1,75 @@
+# Kargo Stage v1.6 - Development Environment with enhanced features
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: dev
+  namespace: kargo-ns
+  labels:
+    environment: development
+    kargo.akuity.io/project: flask-app
+  annotations:
+    # v1.6: Enhanced UI integration
+    kargo.akuity.io/color: "#4CAF50"  # Green for dev
+    kargo.akuity.io/description: "Development environment - auto-promotes latest versions"
+spec:
+  # Subscribe to new artifacts from warehouse
+  subscriptions:
+    warehouse: flask-app
+  
+  # Enhanced promotion mechanisms with v1.6 features
+  promotionMechanisms:
+    gitRepoUpdates:
+      - repoURL: https://github.com/alkon/final-gitops-proj.git
+        writeBranch: main
+        # v1.6: Enhanced commit message templating
+        commitMessageTemplate: |
+          🚀 Kargo: Promote {{.ArtifactType}} {{.ArtifactVersion}} to dev
+          
+          Environment: Development
+          Image: {{.Image}}
+          Chart: {{.Chart}}
+          Promoted by: Kargo v1.6
+        # Enhanced Helm updates
+        helm:
+          images:
+            - image: ghcr.io/alkon/flask-app
+              key: image.tag
+              value: IMAGE_TAG
+              valuesFilePath: kargo/values/dev-values.yaml
+        # No Git credentials needed - Kargo watches registry only
+  
+  # Enhanced verification with v1.6 parallel execution
+  verification:
+    # v1.6: Parallel verification steps for faster feedback
+    parallel: true
+    steps:
+      - name: smoke-tests
+        analysisTemplate:
+          name: smoke-tests-dev
+        args:
+          - name: environment
+            value: development
+          - name: timeout
+            value: "300s"
+      # v1.6: New webhook verification step  
+      - name: webhook-notification
+        webhook:
+          url: "https://hooks.slack.com/your-webhook"
+          method: POST
+          headers:
+            Content-Type: "application/json"
+          body: |
+            {
+              "text": "🚀 Flask-app {{.ArtifactVersion}} deployed to DEV environment",
+              "channel": "#deployments"
+            }
+  
+  # v1.6: Auto-promotion policy with enhanced conditions
+  promotionPolicy:
+    autoPromotionEnabled: true
+    # New v1.6: Conditional auto-promotion
+    conditions:
+      - type: "VerificationPassed"
+        status: "True"
+      - type: "HealthyFor"
+        duration: "5m"  # Must be healthy for 5 minutes
