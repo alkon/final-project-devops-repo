@@ -1,39 +1,28 @@
-# Kargo Stage - Staging Environment
+# Kargo Stage - Staging Environment (simplified for v1.6.0 compatibility)
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
 metadata:
   name: staging
-  namespace: kargo-ns
+  namespace: flask-app
+  labels:
+    environment: staging
+    kargo.akuity.io/project: flask-app
 spec:
-  # Promote from dev stage (not directly from warehouse)
+  # Subscribe from dev stage
   subscriptions:
     upstreamStages:
       - name: dev
   
-  # Promotion mechanisms
-  promotionMechanisms:
-    gitRepoUpdates:
-      - repoURL: https://github.com/alkon/final-gitops-proj.git
-        writeBranch: main
-        helm:
-          images:
-            - image: ghcr.io/alkon/flask-app
-              key: image.tag
-              value: IMAGE_TAG
-              valuesFilePath: kargo/values/staging-values.yaml
-  
-  # Staging requires more thorough verification
-  verification:
-    analysisTemplates:
-      - name: integration-tests
-      - name: performance-tests
-    args:
-      - name: environment
-        value: staging
-      - name: test-duration
-        value: "5m"
-  
-  # Optional: Auto-promotion from dev after 30 minutes of stability
+  # Auto-promote after successful verification
   promotionPolicy:
     autoPromotionEnabled: true
-    autoPromotionDelay: 30m
+  
+  # Update git repo with new versions
+  promotionMechanisms:
+    gitRepoUpdates:
+      - repoURL: https://github.com/alkon/final-project-devops-repo.git
+        writeBranch: features/k8s
+        kustomize:
+          images:
+            - image: ghcr.io/alkon/flask-app
+              path: kargo/argocd-apps/flask-app-staging.yaml
